@@ -1,0 +1,269 @@
+<html>
+<head>
+    <title>Pokébook Homepage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-red-500 flex items-center justify-center min-h-screen">
+    <div id="root" class="bg-white rounded-lg shadow-lg p-8 max-w-4xl w-full text-center border-4 border-yellow-400">
+        <h1 class="text-4xl font-bold text-red-500 mb-4">
+            Welcome to the Pokébook
+        </h1>
+        <div class="flex justify-center mb-4">
+            <div class="bg-yellow-400 w-16 h-16 rounded-full flex items-center justify-center">
+                <i class="fas fa-star text-white text-3xl"></i>
+            </div>
+        </div>
+        <p class="text-gray-700 mb-6">
+            Discover and learn about all your favorite Pokémon in one place. Click the button below to start your journey!
+        </p>
+        <button id="startButton" class="bg-yellow-400 text-red-500 font-bold py-2 px-4 rounded-full hover:bg-yellow-500 transition duration-300 flex items-center justify-center">
+            <i className="fas fa-play mr-2"></i> Start
+        </button>
+        <div class="mt-6 bg-gray-100 p-2 rounded">
+            <p class="text-gray-500 italic">AKM + AD</p>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const POKEMON_API_URL = 'https://pokeapi.co/api/v2/pokemon?limit=151';
+        const POKEMON_SPECIES_API_URL = 'https://pokeapi.co/api/v2/pokemon-species/';
+        const POKEMON_TYPE_API_URL = 'https://pokeapi.co/api/v2/type/';
+
+        const typeIcons = {
+            grass: 'fas fa-leaf text-green-500',
+            fire: 'fas fa-fire text-red-500',
+            water: 'fas fa-tint text-blue-500',
+            bug: 'fas fa-bug text-green-700',
+            normal: 'fas fa-circle text-gray-500',
+            poison: 'fas fa-skull-crossbones text-purple-500',
+            electric: 'fas fa-bolt text-yellow-500',
+            ground: 'fas fa-mountain text-brown-500',
+            fairy: 'fas fa-magic text-pink-500',
+            fighting: 'fas fa-fist-raised text-red-700',
+            psychic: 'fas fa-brain text-pink-700',
+            rock: 'fas fa-gem text-gray-700',
+            ghost: 'fas fa-ghost text-purple-700',
+            ice: 'fas fa-snowflake text-blue-300',
+            dragon: 'fas fa-dragon text-purple-900',
+            dark: 'fas fa-moon text-black',
+            steel: 'fas fa-shield-alt text-gray-400',
+            flying: 'fas fa-feather-alt text-blue-300'
+        };
+
+        const App = () => {
+            const [pokemonList, setPokemonList] = useState([]);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedPokemon, setSelectedPokemon] = useState(null);
+            const [evolutionChain, setEvolutionChain] = useState(null);
+            const [types, setTypes] = useState([]);
+            const [selectedType, setSelectedType] = useState('');
+            const infoBoxRef = useRef(null);
+
+            useEffect(() => {
+                fetch(POKEMON_API_URL)
+                    .then(response => response.json())
+                    .then(data => {
+                        const promises = data.results.map(pokemon => fetch(pokemon.url).then(res => res.json()));
+                        Promise.all(promises).then(pokemonData => setPokemonList(pokemonData));
+                    });
+
+                fetch(POKEMON_TYPE_API_URL)
+                    .then(response => response.json())
+                    .then(data => setTypes(data.results));
+            }, []);
+
+            const handleSearchChange = (event) => {
+                setSearchTerm(event.target.value);
+            };
+
+            const handleTypeChange = (event) => {
+                setSelectedType(event.target.value);
+            };
+
+            const handlePokemonClick = (pokemon) => {
+                setSelectedPokemon(pokemon);
+                fetch(`${POKEMON_SPECIES_API_URL}${pokemon.id}`)
+                    .then(response => response.json())
+                    .then(speciesData => {
+                        fetch(speciesData.evolution_chain.url)
+                            .then(response => response.json())
+                            .then(evolutionData => setEvolutionChain(evolutionData.chain));
+                    });
+
+                if (window.innerWidth < 768) {
+                    setTimeout(() => {
+                        infoBoxRef.current.scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }
+            };
+
+            const handleStopClick = () => {
+                setSelectedPokemon(null);
+                setEvolutionChain(null);
+            };
+
+            const getEvolutionChain = (chain) => {
+                const evolutions = [];
+                let currentChain = chain;
+
+                while (currentChain) {
+                    evolutions.push(currentChain.species.name);
+                    currentChain = currentChain.evolves_to[0];
+                }
+
+                return evolutions;
+            };
+
+            const filteredPokemon = pokemonList.filter(pokemon =>
+                pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const filteredByType = selectedType
+                ? filteredPokemon.filter(pokemon => pokemon.types.some(type => type.type.name === selectedType))
+                : filteredPokemon;
+
+            return (
+                <div className="min-h-screen p-4">
+                    <header className="text-center mb-8 relative">
+                        <h1 className="text-4xl font-bold text-black">Pokébook</h1>
+                        <button
+                            className="absolute top-0 right-0 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition duration-300"
+                            onClick={() => window.location.reload()}
+                        >
+                            <i className="fas fa-stop"></i>
+                        </button>
+                        <input
+                            type="text"
+                            placeholder="Search Pokémon..."
+                            className="mt-4 p-2 border border-gray-300 rounded"
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                        />
+                        <select
+                            className="mt-4 p-2 border border-gray-300 rounded"
+                            value={selectedType}
+                            onChange={handleTypeChange}
+                        >
+                            <option value="">All Types</option>
+                            {types.map(type => (
+                                <option key={type.name} value={type.name}>
+                                    {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                                </option>
+                            ))}
+                        </select>
+                    </header>
+                    <div className="flex flex-col-reverse md:flex-row">
+                        <div className="w-full md:w-1/2 p-4">
+                            <ul className="grid grid-cols-1 gap-4">
+                                {filteredByType.map(pokemon => (
+                                    <li
+                                        key={pokemon.name}
+                                        className="p-4 bg-white rounded shadow cursor-pointer hover:bg-gray-200 flex items-center"
+                                        onClick={() => handlePokemonClick(pokemon)}
+                                    >
+                                        <img
+                                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`}
+                                            alt={`Image of ${pokemon.name}`}
+                                            className="w-12 h-12 mr-4"
+                                        />
+                                        <div>
+                                            <div className="flex items-center">
+                                                {pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
+                                                {pokemon.types.map(typeInfo => (
+                                                    <i key={typeInfo.type.name} className={`${typeIcons[typeInfo.type.name]} ml-2`}></i>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="w-full md:w-1/2 p-4" ref={infoBoxRef}>
+                            {selectedPokemon && (
+                                <div className="bg-white p-6 rounded shadow relative">
+                                    <button
+                                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition duration-300"
+                                        onClick={handleStopClick}
+                                    >
+                                        <i className="fas fa-stop"></i>
+                                    </button>
+                                    <h2 className="text-2xl font-bold mb-4 flex items-center">
+                                        {selectedPokemon.name.charAt(0).toUpperCase() + selectedPokemon.name.slice(1)}
+                                        {selectedPokemon.types.map(typeInfo => (
+                                            <i key={typeInfo.type.name} className={`${typeIcons[typeInfo.type.name]} ml-2`}></i>
+                                        ))}
+                                    </h2>
+                                    <img
+                                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon.id}.png`}
+                                        alt={`Official artwork of ${selectedPokemon.name}`}
+                                        className="mb-4"
+                                    />
+                                    <div className="mb-4">
+                                        <h3 className="text-xl font-semibold">Types</h3>
+                                        <ul className="list-disc list-inside">
+                                            {selectedPokemon.types.map(typeInfo => (
+                                                <li key={typeInfo.type.name}>
+                                                    {typeInfo.type.name.charAt(0).toUpperCase() + typeInfo.type.name.slice(1)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="mb-4">
+                                        <h3 className="text-xl font-semibold">Abilities</h3>
+                                        <ul className="list-disc list-inside">
+                                            {selectedPokemon.abilities.map(abilityInfo => (
+                                                <li key={abilityInfo.ability.name}>
+                                                    {abilityInfo.ability.name.charAt(0).toUpperCase() + abilityInfo.ability.name.slice(1)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="mb-4">
+                                        <h3 className="text-xl font-semibold">Stats</h3>
+                                        <ul className="list-disc list-inside">
+                                            {selectedPokemon.stats.map(statInfo => (
+                                                <li key={statInfo.stat.name}>
+                                                    {statInfo.stat.name.charAt(0).toUpperCase() + statInfo.stat.name.slice(1)}: {statInfo.base_stat}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-semibold">Evolutions</h3>
+                                        <ul className="list-disc list-inside">
+                                            {evolutionChain && getEvolutionChain(evolutionChain).map((evolution, index) => (
+                                                <li key={index}>
+                                                    {evolution.charAt(0).toUpperCase() + evolution.slice(1)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <footer className="text-center mt-8">
+                        <p className="text-gray-500 italic">AD + AKM</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            ReactDOM.render(<App />, document.getElementById('root'));
+        });
+    </script>
+</body>
+</html>
