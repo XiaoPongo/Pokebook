@@ -10,12 +10,12 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <!-- For modern browsers -->
+    <!-- Favicon -->
 <link rel="icon" href="/favicon.ico" type="image/x-icon">
-
-<!-- Optional: For Retina displays -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="manifest" href="/site.webmanifest">
     <style>
         * {
             box-sizing: border-box;
@@ -226,6 +226,79 @@
             0% { width: 0%; }
             100% { width: 100%; }
         }
+        /* Global Responsive Fixes */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow-x: hidden;
+  min-width: 320px;
+}
+
+/* Header Optimization */
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 1rem;
+  align-items: center;
+}
+
+/* Prevent text overflow */
+.card, .text-container {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Mobile-first Media Query */
+@media (max-width: 768px) {
+  /* Stack header elements vertically */
+  header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  /* Fix overlapping elements */
+  .header-item {
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  /* Adjust search input */
+  .search-bar {
+    width: 90%;
+    margin: 0 auto;
+  }
+  
+  /* Pokemon grid responsiveness */
+  .pokemon-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  
+  /* Detail page adjustments */
+  .pokemon-detail {
+    flex-direction: column;
+  }
+}
+
+/* Smaller screens */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .pokemon-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .stats-container {
+    flex-direction: column;
+  }
+}
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen">
