@@ -1,267 +1,943 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Pokebook Homepage</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro PokeBook v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
         body {
             font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a202c, #2d3748);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .pokedex-screen {
+            animation: screen-flicker 2s ease-in-out;
+        }
+        
+        .led-blink {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes screen-flicker {
+            0%, 20%, 50%, 80% { opacity: 0.2; }
+            10%, 30%, 60%, 100% { opacity: 1; }
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        .pokemon-card {
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        
+        .pokemon-card:hover {
+            transform: translateY(-8px) rotateX(5deg);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stat-bar {
+            transition: width 1s ease-in-out;
+        }
+        
+        .type-badge {
+            transition: all 0.2s ease;
+            box-shadow: inset 0 -2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .type-badge:hover {
+            transform: scale(1.05);
+            filter: brightness(110%);
+        }
+        
+        .retro-progress {
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 0;
+            box-shadow: inset 0 0 5px #000;
+        }
+        
+        .retro-progress-bar {
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3);
+            height: 100%;
+        }
+        
+        .retro-screen {
+            background: #8b9d83;
+            border: 8px solid #444;
+            border-radius: 5px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+            font-family: 'Press Start 2P', cursive;
+        }
+        
+        .screen-flicker {
+            animation: screenFlicker 0.5s infinite;
+        }
+        
+        @keyframes screenFlicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.95; }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeOut 0.5s forwards 2s;
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; visibility: hidden; }
+        }
+        
+        .poke-title {
+            font-family: 'Press Start 2P', cursive;
+            color: #ffcc00;
+            text-shadow: 
+                3px 3px 0 #2a75bb,
+                -1px -1px 0 #2a75bb,  
+                1px -1px 0 #2a75bb,
+                -1px 1px 0 #2a75bb,
+                1px 1px 0 #2a75bb;
+            letter-spacing: 2px;
+        }
+        
+        .red-button {
+            background: linear-gradient(to bottom, #e74c3c, #c0392b);
+            border: 3px solid #922b21;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #7a251e;
+        }
+        
+        .red-button:hover {
+            background: linear-gradient(to bottom, #c0392b, #a93226);
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #7a251e;
+        }
+        
+        .blue-button {
+            background: linear-gradient(to bottom, #3498db, #2980b9);
+            border: 3px solid #1c5d8a;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #1a5276;
+        }
+        
+        .blue-button:hover {
+            background: linear-gradient(to bottom, #2980b9, #2573a7);
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #1a5276;
+        }
+        
+        .yellow-button {
+            background: linear-gradient(to bottom, #f1c40f, #f39c12);
+            border: 3px solid #b9770e;
+            border-radius: 8px;
+            color: #2c3e50;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #9c640c;
+        }
+        
+        .yellow-button:hover {
+            background: linear-gradient(to bottom, #f39c12, #e67e22);
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #9c640c;
+        }
+        
+        .crt-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+            animation: flicker 0.15s infinite;
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 0.1; }
+            20% { opacity: 0.2; }
+            40% { opacity: 0.25; }
+            60% { opacity: 0.3; }
+            80% { opacity: 0.25; }
+            100% { opacity: 0.2; }
+        }
+        
+        .app-loading-bar {
+            animation: appLoading 3.5s linear forwards;
+        }
+        
+        @keyframes appLoading {
+            0% { width: 1%; }
+            57.14% { width: 22%; } /* 2s / 3.5s ≈ 57.14% */
+            71.43% { width: 22%; } /* 2.5s / 3.5s ≈ 71.43% */
+            100% { width: 100%; } /* 3.5s */
+        }
+        
+        .initial-progress {
+            animation: initialProgress 2s linear forwards;
+        }
+        
+        @keyframes initialProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
         }
     </style>
 </head>
-<body class="bg-red-500 flex items-center justify-center min-h-screen">
-    <div id="root" class="bg-white rounded-lg shadow-lg p-8 max-w-4xl w-full text-center border-4 border-yellow-400">
-        <h1 class="text-4xl font-bold text-red-500 mb-4">
-            Welcome to the Pokebook
-        </h1>
-        <div class="flex justify-center mb-4">
-            <div class="bg-yellow-400 w-16 h-16 rounded-full flex items-center justify-center">
-                <i class="fas fa-star text-white text-3xl"></i>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="crt-effect"></div>
+    
+    <div class="loading-overlay">
+        <div class="text-center">
+            <div class="mb-6">
+                <img 
+                    src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" 
+                    alt="Pikachu" 
+                    class="w-32 h-32 mx-auto animate-bounce"
+                >
+            </div>
+            <div class="retro-screen w-64 h-8 mx-auto mb-4 flex items-center justify-center">
+                <p class="text-green-400 text-sm">INITIALIZING POKEBOOK...</p>
+            </div>
+            <div class="retro-progress w-64 h-6 mx-auto">
+                <div class="retro-progress-bar initial-progress"></div>
             </div>
         </div>
-        <p class="text-gray-700 mb-6">
-            Discover and learn about all your favorite Pokémon in one place. Click the button below to start your journey!
-        </p>
-        <button id="startButton" class="bg-yellow-400 text-red-500 font-bold py-2 px-4 rounded-full hover:bg-yellow-500 transition duration-300 flex items-center justify-center">
-            <i className="fas fa-play mr-2"></i> Start
-        </button>
-        <div class="mt-6 bg-gray-100 p-2 rounded">
-            <p class="text-gray-500 italic">Team KADAK</p>
+    </div>
+
+    <div id="welcome" class="w-full max-w-4xl">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-t-3xl p-8 shadow-2xl border-4 border-red-800">
+            <div class="flex justify-between items-center">
+                <div class="flex space-x-2">
+                    <div class="w-4 h-4 bg-red-400 rounded-full led-blink"></div>
+                    <div class="w-4 h-4 bg-yellow-400 rounded-full led-blink" style="animation-delay: 0.2s"></div>
+                    <div class="w-4 h-4 bg-green-400 rounded-full led-blink" style="animation-delay: 0.4s"></div>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-4 border-white shadow-inner"></div>
+            </div>
+        </div>
+        <div class="bg-gradient-to-b from-gray-200 to-gray-300 rounded-b-3xl p-8 shadow-2xl border-4 border-red-800 border-t-0 pokedex-screen">
+            <div class="text-center mb-6">
+                <h1 class="text-5xl font-bold text-red-600 mb-4 text-center" style="font-family: 'Press Start 2P', cursive;">
+                    POKEBOOK v2.0
+                </h1>
+            </div>
+            <p class="text-gray-700 mb-6 text-center text-lg max-w-2xl mx-auto">
+                The ultimate digital encyclopedia for Pokémon trainers! Explore detailed information about all your favorite Pokémon.
+            </p>
+            <button
+                id="power-on-button"
+                class="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 px-8 rounded-full hover:from-green-600 hover:to-green-700 transition-all flex items-center justify-center mx-auto shadow-lg text-lg yellow-button"
+                style="font-family: 'Press Start 2P', cursive;"
+            >
+                <i class="fas fa-power-off mr-3"></i> POWER ON
+            </button>
+            <div class="mt-8 bg-gray-300 p-3 rounded-xl text-center max-w-md mx-auto">
+                <p class="text-gray-600 text-sm" style="font-family: 'Press Start 2P', cursive;">Team KADAK</p>
+                <p class="text-gray-600 mt-1">Retro Edition</p>
+            </div>
         </div>
     </div>
+    <div id="root" class="hidden w-full"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const POKEMON_API_URL = 'https://pokeapi.co/api/v2/pokemon?limit=1302';
-        const POKEMON_SPECIES_API_URL = 'https://pokeapi.co/api/v2/pokemon-species/';
-        const POKEMON_TYPE_API_URL = 'https://pokeapi.co/api/v2/type/';
-
-        const typeIcons = {
-            grass: 'fas fa-leaf text-green-500',
-            fire: 'fas fa-fire text-red-500',
-            water: 'fas fa-tint text-blue-500',
-            bug: 'fas fa-bug text-green-700',
-            normal: 'fas fa-circle text-gray-500',
-            poison: 'fas fa-skull-crossbones text-purple-500',
-            electric: 'fas fa-bolt text-yellow-500',
-            ground: 'fas fa-mountain text-brown-500',
-            fairy: 'fas fa-magic text-pink-500',
-            fighting: 'fas fa-fist-raised text-red-700',
-            psychic: 'fas fa-brain text-pink-700',
-            rock: 'fas fa-gem text-gray-700',
-            ghost: 'fas fa-ghost text-purple-700',
-            ice: 'fas fa-snowflake text-blue-300',
-            dragon: 'fas fa-dragon text-purple-900',
-            dark: 'fas fa-moon text-black',
-            steel: 'fas fa-shield-alt text-gray-400',
-            flying: 'fas fa-feather-alt text-blue-300'
+        const typeColors = {
+            normal: 'bg-gradient-to-br from-gray-400 to-gray-500',
+            fire: 'bg-gradient-to-br from-red-500 to-red-600',
+            water: 'bg-gradient-to-br from-blue-500 to-blue-600',
+            electric: 'bg-gradient-to-br from-yellow-400 to-yellow-500',
+            grass: 'bg-gradient-to-br from-green-500 to-green-600',
+            ice: 'bg-gradient-to-br from-blue-300 to-blue-400',
+            fighting: 'bg-gradient-to-br from-red-700 to-red-800',
+            poison: 'bg-gradient-to-br from-purple-500 to-purple-600',
+            ground: 'bg-gradient-to-br from-yellow-600 to-yellow-700',
+            flying: 'bg-gradient-to-br from-blue-200 to-blue-300',
+            psychic: 'bg-gradient-to-br from-pink-500 to-pink-600',
+            bug: 'bg-gradient-to-br from-lime-500 to-lime-600',
+            rock: 'bg-gradient-to-br from-yellow-800 to-yellow-900',
+            ghost: 'bg-gradient-to-br from-purple-700 to-purple-800',
+            dragon: 'bg-gradient-to-br from-indigo-700 to-indigo-800',
+            dark: 'bg-gradient-to-br from-gray-800 to-gray-900',
+            steel: 'bg-gradient-to-br from-gray-500 to-gray-600',
+            fairy: 'bg-gradient-to-br from-pink-300 to-pink-400',
         };
+
+        const generations = [
+            { value: 'all', label: 'ALL GENERATIONS', region: 'All Regions' },
+            { value: '1', label: 'GEN I (KANTO)', region: 'Kanto', startYear: 1996 },
+            { value: '2', label: 'GEN II (JOHTO)', region: 'Johto', startYear: 1999 },
+            { value: '3', label: 'GEN III (HOENN)', region: 'Hoenn', startYear: 2002 },
+            { value: '4', label: 'GEN IV (SINNOH)', region: 'Sinnoh', startYear: 2006 },
+            { value: '5', label: 'GEN V (UNOVA)', region: 'Unova', startYear: 2010 },
+            { value: '6', label: 'GEN VI (KALOS)', region: 'Kalos', startYear: 2013 },
+            { value: '7', label: 'GEN VII (ALOLA)', region: 'Alola', startYear: 2016 },
+            { value: '8', label: 'GEN VIII (GALAR)', region: 'Galar', startYear: 2019 },
+            { value: '9', label: 'GEN IX (PALDEA)', region: 'Paldea', startYear: 2022 },
+        ];
+
+        const genRanges = {
+            'all': { offset: 0, limit: 1300 },
+            '1': { offset: 0, limit: 151 },
+            '2': { offset: 151, limit: 100 },
+            '3': { offset: 251, limit: 135 },
+            '4': { offset: 386, limit: 107 },
+            '5': { offset: 493, limit: 156 },
+            '6': { offset: 649, limit: 72 },
+            '7': { offset: 721, limit: 88 },
+            '8': { offset: 809, limit: 96 },
+            '9': { offset: 905, limit: 105 },
+        };
+
+        const types = [
+            'normal', 'fire', 'water', 'electric', 'grass', 'ice',
+            'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
+            'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
+        ];
 
         const App = () => {
             const [pokemonList, setPokemonList] = useState([]);
-            const [searchTerm, setSearchTerm] = useState('');
+            const [filteredPokemon, setFilteredPokemon] = useState([]);
             const [selectedPokemon, setSelectedPokemon] = useState(null);
+            const [pokemonSpecies, setPokemonSpecies] = useState(null);
             const [evolutionChain, setEvolutionChain] = useState(null);
-            const [types, setTypes] = useState([]);
+            const [searchTerm, setSearchTerm] = useState('');
             const [selectedType, setSelectedType] = useState('');
-            const infoBoxRef = useRef(null);
+            const [selectedGeneration, setSelectedGeneration] = useState('1');
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState('');
+            const [showDetails, setShowDetails] = useState(false);
+            const [progress, setProgress] = useState(1);
+            const detailsRef = useRef(null);
+            const [cachedPokemon, setCachedPokemon] = useState({});
+            const [animationComplete, setAnimationComplete] = useState(false);
 
             useEffect(() => {
-                fetch(POKEMON_API_URL)
-                    .then(response => response.json())
-                    .then(data => {
-                        const promises = data.results.map(pokemon => fetch(pokemon.url).then(res => res.json()));
-                        Promise.all(promises).then(pokemonData => setPokemonList(pokemonData));
-                    });
+                let animationFrame;
+                const startTime = performance.now();
 
-                fetch(POKEMON_TYPE_API_URL)
-                    .then(response => response.json())
-                    .then(data => setTypes(data.results));
+                const animateProgress = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+
+                    if (elapsed < 2000) {
+                        // 1% to 22% over 2 seconds (0-2000ms)
+                        const progress = 1 + (21 * elapsed) / 2000;
+                        setProgress(Math.round(progress));
+                    } else if (elapsed < 2500) {
+                        // Pause at 22% for 0.5 seconds (2000-2500ms)
+                        setProgress(22);
+                    } else if (elapsed < 4000) {
+                        // 22% to 100% over 1.5 seconds (2500-4000ms)
+                        const progress = 22 + (78 * (elapsed - 2500)) / 1500;
+                        setProgress(Math.round(progress));
+                    } else {
+                        // Complete at 100%
+                        setProgress(100);
+                        setAnimationComplete(true);
+                        return;
+                    }
+
+                    animationFrame = requestAnimationFrame(animateProgress);
+                };
+
+                animationFrame = requestAnimationFrame(animateProgress);
+
+                return () => cancelAnimationFrame(animationFrame);
             }, []);
 
-            const handleSearchChange = (event) => {
-                setSearchTerm(event.target.value);
-            };
+            useEffect(() => {
+                const fetchPokemon = async (gen = '1') => {
+                    try {
+                        setError('');
+                        setLoading(true);
+                        const { offset, limit } = genRanges[gen];
+                        
+                        if (cachedPokemon[gen]) {
+                            setPokemonList(cachedPokemon[gen]);
+                            setFilteredPokemon(cachedPokemon[gen]);
+                            return;
+                        }
 
-            const handleTypeChange = (event) => {
-                setSelectedType(event.target.value);
-            };
+                        const response = await fetch(
+                            `https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`
+                        );
+                        if (!response.ok) throw new Error('Failed to fetch Pokémon list');
+                        const data = await response.json();
 
-            const handlePokemonClick = (pokemon) => {
+                        const pokemonPromises = data.results.map(async (pokemon) => {
+                            const pokemonResponse = await fetch(pokemon.url);
+                            if (!pokemonResponse.ok) throw new Error(`Failed to fetch ${pokemon.name}`);
+                            return pokemonResponse.json();
+                        });
+
+                        const pokemonData = await Promise.all(pokemonPromises);
+                        setPokemonList(pokemonData);
+                        setFilteredPokemon(pokemonData);
+                        setCachedPokemon(prev => ({ ...prev, [gen]: pokemonData }));
+                    } catch (err) {
+                        console.error('Error fetching Pokémon:', err);
+                        setError('Failed to load Pokémon. Please try again later.');
+                    }
+                };
+
+                fetchPokemon(selectedGeneration);
+            }, [selectedGeneration]);
+
+            // Only set loading to false when both animation and data are ready
+            useEffect(() => {
+                if (animationComplete && pokemonList.length > 0) {
+                    setLoading(false);
+                }
+            }, [animationComplete, pokemonList]);
+
+            useEffect(() => {
+                let filtered = pokemonList;
+
+                if (searchTerm) {
+                    filtered = filtered.filter(pokemon =>
+                        pokemon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        pokemon.id.toString().includes(searchTerm)
+                    );
+                }
+
+                if (selectedType) {
+                    filtered = filtered.filter(pokemon =>
+                        pokemon.types.some(type => type.type.name === selectedType)
+                    );
+                }
+
+                setFilteredPokemon(filtered);
+            }, [pokemonList, searchTerm, selectedType]);
+
+            const handlePokemonClick = async (pokemon) => {
                 setSelectedPokemon(pokemon);
-                fetch(${POKEMON_SPECIES_API_URL}${pokemon.id})
-                    .then(response => response.json())
-                    .then(speciesData => {
-                        fetch(speciesData.evolution_chain.url)
-                            .then(response => response.json())
-                            .then(evolutionData => setEvolutionChain(evolutionData.chain));
-                    });
+                setShowDetails(true);
+                
+                try {
+                    setError('');
+                    const speciesResponse = await fetch(
+                        `https://pokeapi.co/api/v2/pokemon-species/${pokemon.id}`
+                    );
+                    if (!speciesResponse.ok) throw new Error('Failed to fetch species');
+                    const speciesData = await speciesResponse.json();
+                    setPokemonSpecies(speciesData);
+
+                    const evolutionResponse = await fetch(speciesData.evolution_chain.url);
+                    if (!evolutionResponse.ok) throw new Error('Failed to fetch evolution chain');
+                    const evolutionData = await evolutionResponse.json();
+                    setEvolutionChain(evolutionData.chain);
+                } catch (err) {
+                    console.error('Error fetching Pokémon details:', err);
+                    setError('Failed to load Pokémon details.');
+                }
 
                 setTimeout(() => {
-                    infoBoxRef.current.scrollIntoView({ behavior: 'smooth' });
-                }, 300);
+                    detailsRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
             };
 
-            const handleStopClick = () => {
+            const getRandomPokemon = () => {
+                if (filteredPokemon.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * filteredPokemon.length);
+                    handlePokemonClick(filteredPokemon[randomIndex]);
+                }
+            };
+
+            const closeDetails = () => {
+                setShowDetails(false);
                 setSelectedPokemon(null);
+                setPokemonSpecies(null);
                 setEvolutionChain(null);
+                setError('');
             };
 
-            const getEvolutionChain = (chain) => {
-                const evolutions = [];
-                let currentChain = chain;
+            const getFlavorText = () => {
+                if (!pokemonSpecies?.flavor_text_entries) return '';
+                const entry = pokemonSpecies.flavor_text_entries.find(
+                    entry => entry.language?.name === 'en'
+                );
+                return entry ? entry.flavor_text.replace(/\f/g, ' ') : 'No description available.';
+            };
 
-                while (currentChain) {
-                    evolutions.push(currentChain.species.name);
-                    currentChain = currentChain.evolves_to[0];
+            const renderEvolutionChain = (chain) => {
+                if (!chain?.species) return [];
+                const evolutions = [];
+                let current = chain;
+
+                while (current?.species) {
+                    const urlParts = current.species.url.split('/');
+                    const pokemonId = urlParts[urlParts.length - 2];
+                    evolutions.push(
+                        <div key={current.species.name} className="flex items-center">
+                            <div
+                                className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform"
+                                onClick={() => {
+                                    const pokemon = pokemonList.find(p => p.id === parseInt(pokemonId));
+                                    if (pokemon) {
+                                        handlePokemonClick(pokemon);
+                                    } else {
+                                        fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`)
+                                            .then(res => res.json())
+                                            .then(data => handlePokemonClick(data))
+                                            .catch(err => console.error('Error fetching evolution Pokémon:', err));
+                                    }
+                                }}
+                            >
+                                <img
+                                    src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`}
+                                    alt={current.species.name}
+                                    className="w-16 h-16 mx-auto mb-2"
+                                />
+                                <p className="text-sm font-medium capitalize">{current.species.name}</p>
+                            </div>
+                            {current.evolves_to?.length > 0 && (
+                                <i className="fas fa-arrow-right w-6 h-6 text-gray-400 mx-2"></i>
+                            )}
+                        </div>
+                    );
+                    current = current.evolves_to[0];
                 }
 
                 return evolutions;
             };
 
-            const filteredPokemon = pokemonList.filter(pokemon =>
-                pokemon.name.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const renderGenerationInfo = () => {
+                const gen = generations.find(g => g.value === selectedGeneration);
+                if (!gen) return null;
+                
+                return (
+                    <div className="bg-blue-800 text-white rounded-lg p-4 mt-4">
+                        <h3 className="text-xl font-bold mb-2">Generation Info</h3>
+                        <p><span className="font-semibold">Region:</span> {gen.region}</p>
+                        <p><span className="font-semibold">Pokémon Count:</span> {filteredPokemon.length}</p>
+                    </div>
+                );
+            };
 
-            const filteredByType = selectedType
-                ? filteredPokemon.filter(pokemon => pokemon.types.some(type => type.type.name === selectedType))
-                : filteredPokemon;
+            if (error) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+                        <div className="bg-gradient-to-b from-gray-200 to-gray-300 rounded-xl p-8 shadow-2xl text-center border-4 border-red-800 max-w-md">
+                            <div className="text-red-500 text-5xl mb-4">
+                                <i className="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <p className="text-red-600 text-lg mb-4" style={{ fontFamily: "'Press Start 2P', cursive" }}>{error}</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-full hover:from-green-600 hover:to-green-700 transition-all blue-button"
+                            >
+                                <i className="fas fa-redo mr-2"></i> Try Again
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+                        <div className="bg-gradient-to-b from-gray-200 to-gray-300 rounded-xl p-8 shadow-2xl text-center border-4 border-red-800 max-w-md">
+                            <div className="mb-6">
+                                <div className="w-32 h-32 mx-auto relative">
+                                    <img 
+                                        src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" 
+                                        alt="Loading" 
+                                        className="w-full h-full object-contain animate-pulse"
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-gray-600 text-lg mb-4" style={{ fontFamily: "'Press Start 2P', cursive" }}>
+                                LOADING {progress}%
+                            </p>
+                            <div className="retro-progress w-64 h-6 mx-auto">
+                                <div
+                                    className="retro-progress-bar"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                            <p className="text-gray-600 mt-4">FETCHING POKÉMON DATA...</p>
+                        </div>
+                    </div>
+                );
+            }
 
             return (
-                <div className="min-h-screen p-4">
-                    <header className="text-center mb-8 relative">
-                        <h1 className="text-4xl font-bold text-black">Pokebook</h1>
-                        <button
-                            className="absolute top-0 right-0 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition duration-300"
-                            onClick={() => window.location.reload()}
-                        >
-                            <i className="fas fa-stop"></i>
-                        </button>
-                        <input
-                            type="text"
-                            placeholder="Search Pokémon..."
-                            className="mt-4 p-2 border border-gray-300 rounded w-full md:w-auto"
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                        />
-                        <select
-                            className="mt-4 p-2 border border-gray-300 rounded w-full md:w-auto"
-                            value={selectedType}
-                            onChange={handleTypeChange}
-                        >
-                            <option value="">All Types</option>
-                            {types.map(type => (
-                                <option key={type.name} value={type.name}>
-                                    {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
-                                </option>
-                            ))}
-                        </select>
-                    </header>
-                    <div className="flex flex-col-reverse md:flex-row">
-                        <div className="w-full md:w-1/2 p-4">
-                            <ul className="grid grid-cols-1 gap-4">
-                                {filteredByType.map(pokemon => (
-                                    <li
-                                        key={pokemon.name}
-                                        className="p-4 bg-white rounded shadow cursor-pointer hover:bg-gray-200 flex items-center"
-                                        onClick={() => handlePokemonClick(pokemon)}
-                                    >
-                                        <img
-                                            src={https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png}
-                                            alt={Image of ${pokemon.name}}
-                                            className="w-12 h-12 mr-4"
-                                        />
-                                        <div>
-                                            <div className="flex items-center">
-                                                {pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
-                                                {pokemon.types.map(typeInfo => (
-                                                    <i key={typeInfo.type.name} className={${typeIcons[typeInfo.type.name]} ml-2}></i>
-                                                ))}
+                <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-t-3xl p-6 shadow-2xl border-4 border-red-800 relative">
+                            <div className="absolute top-4 left-6 w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-4 border-white shadow-inner"></div>
+                            <div className="absolute top-6 left-24 flex space-x-2">
+                                <div className="w-3 h-3 bg-red-400 rounded-full led-blink"></div>
+                                <div className="w-3 h-3 bg-yellow-400 rounded-full led-blink" style={{ animationDelay: '0.2s' }}></div>
+                                <div className="w-3 h-3 bg-green-400 rounded-full led-blink" style={{ animationDelay: '0.4s' }}></div>
+                            </div>
+                            <div className="text-center">
+                                <h1 className="text-4xl font-bold text-white" style={{ fontFamily: "'Press Start 2P', cursive" }}>
+                                    POKEBOOK
+                                </h1>
+                                <p className="text-red-100 mt-2">DIGITAL POKÉMON ENCYCLOPEDIA</p>
+                            </div>
+                        </div>
+                        <div className="bg-gradient-to-b from-gray-100 to-gray-200 border-4 border-red-800 border-t-0 rounded-b-3xl overflow-hidden">
+                            {!showDetails ? (
+                                <div className="p-6">
+                                    <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-2xl p-6 mb-6 shadow-inner">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="relative">
+                                                <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search Pokémon..."
+                                                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-800 border-0 focus:ring-2 focus:ring-blue-400 outline-none text-white"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="relative">
+                                                <i className="fas fa-filter absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                                                <select
+                                                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-800 border-0 focus:ring-2 focus:ring-blue-400 outline-none appearance-none text-white"
+                                                    value={selectedType}
+                                                    onChange={(e) => setSelectedType(e.target.value)}
+                                                >
+                                                    <option value="">All Types</option>
+                                                    {types.map(type => (
+                                                        <option key={type} value={type}>
+                                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="relative">
+                                                <i className="fas fa-globe absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                                                <select
+                                                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-800 border-0 focus:ring-2 focus:ring-blue-400 outline-none appearance-none text-white"
+                                                    value={selectedGeneration}
+                                                    onChange={(e) => setSelectedGeneration(e.target.value)}
+                                                >
+                                                    {generations.map(gen => (
+                                                        <option key={gen.value} value={gen.value}>
+                                                            {gen.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="w-full md:w-1/2 p-4" ref={infoBoxRef}>
-                            {selectedPokemon && (
-                                <div className="bg-white p-6 rounded shadow relative">
-                                    <button
-                                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition duration-300"
-                                        onClick={handleStopClick}
-                                    >
-                                        <i className="fas fa-stop"></i>
-                                    </button>
-                                    <h2 className="text-2xl font-bold mb-4 flex items-center">
-                                        {selectedPokemon.name.charAt(0).toUpperCase() + selectedPokemon.name.slice(1)}
-                                        {selectedPokemon.types.map(typeInfo => (
-                                            <i key={typeInfo.type.name} className={${typeIcons[typeInfo.type.name]} ml-2}></i>
+                                        <div className="flex justify-center mt-4">
+                                            <button
+                                                onClick={getRandomPokemon}
+                                                className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 font-bold py-3 px-6 rounded-full hover:from-yellow-500 hover:to-yellow-600 transition-all flex items-center space-x-2 shadow-lg yellow-button"
+                                            >
+                                                <i className="fas fa-random w-5 h-5"></i>
+                                                <span>RANDOM POKÉMON</span>
+                                            </button>
+                                        </div>
+                                        {renderGenerationInfo()}
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {filteredPokemon.map(pokemon => (
+                                            <div
+                                                key={pokemon.id}
+                                                className="pokemon-card bg-gradient-to-br from-white to-gray-100 rounded-xl p-4 shadow-lg cursor-pointer border-2 border-gray-200 hover:border-blue-400"
+                                                onClick={() => handlePokemonClick(pokemon)}
+                                            >
+                                                <div className="flex justify-center">
+                                                    <img
+                                                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`}
+                                                        alt={pokemon.name}
+                                                        className="w-24 h-24 mb-3"
+                                                    />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-sm text-gray-500 font-medium">
+                                                        #{pokemon.id.toString().padStart(3, '0')}
+                                                    </p>
+                                                    <h3 className="font-bold text-lg capitalize text-gray-800 mb-2">
+                                                        {pokemon.name}
+                                                    </h3>
+                                                    <div className="flex justify-center space-x-1 flex-wrap">
+                                                        {pokemon.types.map(type => (
+                                                            <span
+                                                                key={type.type.name}
+                                                                className={`type-badge px-3 py-1 rounded-full text-white text-xs font-medium ${typeColors[type.type.name]} mb-1`}
+                                                            >
+                                                                {type.type.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ))}
-                                    </h2>
-                                    <img
-                                        src={https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon.id}.png}
-                                        alt={Official artwork of ${selectedPokemon.name}}
-                                        className="mb-4"
-                                    />
-                                    <div className="mb-4">
-                                        <h3 className="text-xl font-semibold">Types</h3>
-                                        <ul className="list-disc list-inside">
-                                            {selectedPokemon.types.map(typeInfo => (
-                                                <li key={typeInfo.type.name}>
-                                                    {typeInfo.type.name.charAt(0).toUpperCase() + typeInfo.type.name.slice(1)}
-                                                </li>
-                                            ))}
-                                        </ul>
                                     </div>
-                                    <div className="mb-4">
-                                        <h3 className="text-xl font-semibold">Abilities</h3>
-                                        <ul className="list-disc list-inside">
-                                            {selectedPokemon.abilities.map(abilityInfo => (
-                                                <li key={abilityInfo.ability.name}>
-                                                    {abilityInfo.ability.name.charAt(0).toUpperCase() + abilityInfo.ability.name.slice(1)}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    <div className="mb-4">
-                                        <h3 className="text-xl font-semibold">Stats</h3>
-                                        <ul className="list-disc list-inside">
-                                            {selectedPokemon.stats.map(statInfo => (
-                                                <li key={statInfo.stat.name}>
-                                                    {statInfo.stat.name.charAt(0).toUpperCase() + statInfo.stat.name.slice(1)}: {statInfo.base_stat}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-semibold">Evolutions</h3>
-                                        <ul className="list-disc list-inside">
-                                            {evolutionChain && getEvolutionChain(evolutionChain).map((evolution, index) => (
-                                                <li key={index}>
-                                                    {evolution.charAt(0).toUpperCase() + evolution.slice(1)}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
+                                    {filteredPokemon.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <div className="inline-block p-4 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full mb-4">
+                                                <i className="fas fa-search text-gray-600 text-4xl"></i>
+                                            </div>
+                                            <p className="text-gray-600 text-lg">NO POKÉMON FOUND MATCHING YOUR CRITERIA.</p>
+                                            <button
+                                                onClick={() => {
+                                                    setSearchTerm('');
+                                                    setSelectedType('');
+                                                }}
+                                                className="mt-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-700 blue-button"
+                                            >
+                                                CLEAR FILTERS
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div ref={detailsRef} className="p-6">
+                                    {selectedPokemon && (
+                                        <div className="bg-gradient-to-b from-white to-gray-100 rounded-2xl shadow-2xl overflow-hidden">
+                                            <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6 text-white relative">
+                                                <button
+                                                    onClick={closeDetails}
+                                                    className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors red-button"
+                                                >
+                                                    <i className="fas fa-times w-5 h-5"></i>
+                                                </button>
+                                                <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                                                    <div className="flex-shrink-0">
+                                                        <img
+                                                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon.id}.png`}
+                                                            alt={selectedPokemon.name}
+                                                            className="w-40 h-40"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-blue-200 font-medium">
+                                                            #{selectedPokemon.id.toString().padStart(3, '0')}
+                                                        </p>
+                                                        <h2 className="text-4xl font-bold capitalize mb-2">
+                                                            {selectedPokemon.name}
+                                                        </h2>
+                                                        <div className="flex space-x-2">
+                                                            {selectedPokemon.types.map(type => (
+                                                                <span
+                                                                    key={type.type.name}
+                                                                    className={`px-4 py-2 rounded-full text-white font-medium ${typeColors[type.type.name]}`}
+                                                                >
+                                                                    {type.type.name}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="p-6 space-y-6">
+                                                {error && (
+                                                    <p className="text-red-500 text-center mb-4">{error}</p>
+                                                )}
+                                                
+                                                {pokemonSpecies && (
+                                                    <div>
+                                                        <h3 className="text-xl font-bold mb-3 text-gray-800">
+                                                            POKÉDEX ENTRY
+                                                        </h3>
+                                                        <p className="text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                                                            {getFlavorText()}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 shadow">
+                                                        <h4 className="font-semibold text-gray-800 mb-3">
+                                                            PHYSICAL
+                                                        </h4>
+                                                        <div className="space-y-2">
+                                                            <p className="text-gray-600 flex justify-between">
+                                                                <span>Height:</span>
+                                                                <span className="font-medium">{(selectedPokemon.height / 10).toFixed(1)} m</span>
+                                                            </p>
+                                                            <p className="text-gray-600 flex justify-between">
+                                                                <span>Weight:</span>
+                                                                <span className="font-medium">{(selectedPokemon.weight / 10).toFixed(1)} kg</span>
+                                                            </p>
+                                                            <p className="text-gray-600 flex justify-between">
+                                                                <span>Base XP:</span>
+                                                                <span className="font-medium">{selectedPokemon.base_experience}</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 shadow">
+                                                        <h4 className="font-semibold text-gray-800 mb-3">
+                                                            ABILITIES
+                                                        </h4>
+                                                        <div className="space-y-2">
+                                                            {selectedPokemon.abilities?.length > 0 ? (
+                                                                selectedPokemon.abilities.map(ability => (
+                                                                    <p
+                                                                        key={ability.ability.name}
+                                                                        className="text-gray-600 capitalize flex justify-between"
+                                                                    >
+                                                                        <span>{ability.ability.name.replace('-', ' ')}</span>
+                                                                        <span className={`text-xs px-2 py-1 rounded ${ability.is_hidden ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                                            {ability.is_hidden ? 'Hidden' : 'Standard'}
+                                                                        </span>
+                                                                    </p>
+                                                                ))
+                                                            ) : (
+                                                                <p className="text-gray-600">No abilities available.</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {pokemonSpecies && (
+                                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 shadow">
+                                                            <h4 className="font-semibold text-gray-800 mb-3">
+                                                                HABITAT & GENERATION
+                                                            </h4>
+                                                            <div className="space-y-2">
+                                                                <p className="text-gray-600 capitalize flex justify-between">
+                                                                    <span>Habitat:</span>
+                                                                    <span className="font-medium">{pokemonSpecies.habitat?.name.replace('-', ' ') || 'Unknown'}</span>
+                                                                </p>
+                                                                <p className="text-gray-600 capitalize flex justify-between">
+                                                                    <span>Generation:</span>
+                                                                    <span className="font-medium">{pokemonSpecies.generation?.name.replace('generation-', '').toUpperCase()}</span>
+                                                                </p>
+                                                                <p className="text-gray-600 capitalize flex justify-between">
+                                                                    <span>Capture Rate:</span>
+                                                                    <span className="font-medium">{pokemonSpecies.capture_rate}</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                
+                                                <div>
+                                                    <h3 className="text-xl font-bold mb-4 text-gray-800">
+                                                        BASE STATS
+                                                    </h3>
+                                                    <div className="space-y-3">
+                                                        {selectedPokemon.stats?.length > 0 ? (
+                                                            selectedPokemon.stats.map(stat => {
+                                                                const statName = stat.stat.name
+                                                                    .replace('-', ' ')
+                                                                    .replace('special', 'sp.');
+                                                                const percentage = (stat.base_stat / 255) * 100;
+                                                                return (
+                                                                    <div
+                                                                        key={stat.stat.name}
+                                                                        className="flex items-center space-x-4"
+                                                                    >
+                                                                        <div className="w-24 text-sm font-medium text-gray-600 capitalize">
+                                                                            {statName}
+                                                                        </div>
+                                                                        <div className="w-12 text-right font-bold text-gray-800">
+                                                                            {stat.base_stat}
+                                                                        </div>
+                                                                        <div className="flex-1 bg-gray-200 rounded-full h-3">
+                                                                            <div
+                                                                                className="stat-bar h-3 rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
+                                                                                style={{ width: `${percentage}%` }}
+                                                                            ></div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        ) : (
+                                                            <p className="text-gray-600">No stats available.</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-6 grid grid-cols-2 gap-4">
+                                                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                                                            <h4 className="font-semibold text-gray-800 mb-2">Total Stats</h4>
+                                                            <p className="text-3xl font-bold text-green-600">
+                                                                {selectedPokemon.stats.reduce((acc, stat) => acc + stat.base_stat, 0)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                                                            <h4 className="font-semibold text-gray-800 mb-2">Base Experience</h4>
+                                                            <p className="text-3xl font-bold text-blue-600">
+                                                                {selectedPokemon.base_experience}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {evolutionChain && (
+                                                    <div>
+                                                        <h3 className="text-xl font-bold mb-4 text-gray-800">
+                                                            EVOLUTION CHAIN
+                                                        </h3>
+                                                        <div className="flex justify-center items-center space-x-4 flex-wrap">
+                                                            {renderEvolutionChain(evolutionChain).length > 0 ? (
+                                                                renderEvolutionChain(evolutionChain)
+                                                            ) : (
+                                                                <div className="text-center py-8 w-full">
+                                                                    <div className="inline-block p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
+                                                                        <i className="fas fa-question-circle text-gray-500 text-3xl"></i>
+                                                                    </div>
+                                                                    <p className="text-gray-600">THIS POKÉMON DOES NOT EVOLVE.</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
+                        <div className="text-center mt-6">
+                            <p className="text-white text-opacity-80" style={{ fontFamily: "'Press Start 2P', cursive" }}>
+                                TEAM KADAK • POKEBOOK v2.0 • RETRO EDITION
+                            </p>
+                            <p className="text-white text-opacity-60 mt-1">POWERED BY POKEAPI</p>
+                        </div>
                     </div>
-                    <footer className="text-center mt-8">
-                        <p className="text-gray-500 italic">Team KADAK</p>
-                    </footer>
                 </div>
             );
         };
 
-        document.getElementById('startButton').addEventListener('click', function() {
-            ReactDOM.render(<App />, document.getElementById('root'));
+        document.getElementById('power-on-button').addEventListener('click', () => {
+            document.getElementById('welcome').classList.add('hidden');
+            document.getElementById('root').classList.remove('hidden');
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
         });
     </script>
 </body>
