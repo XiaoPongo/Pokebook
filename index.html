@@ -227,6 +227,27 @@
             100% { width: 100%; }
         }
 
+        /* Power off animation */
+        .power-off-animation {
+            animation: powerOff 0.8s ease forwards;
+            transform-origin: center;
+        }
+        
+        @keyframes powerOff {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+
         /* Global Responsive Fixes */
         * {
             box-sizing: border-box;
@@ -298,6 +319,19 @@
                 font-size: 1.5rem !important; /* Smaller size to avoid overlap */
                 text-align: center; /* Centered on mobile */
             }
+            
+            /* Adjust header buttons for mobile */
+            .header-buttons {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+            }
+            
+            /* Fix details button spacing */
+            .details-buttons {
+                right: 1rem;
+                gap: 0.5rem;
+            }
         }
 
         /* Smaller screens */
@@ -321,6 +355,19 @@
 
             .pokemon-page-title {
                 font-size: 1.2rem !important;
+            }
+            
+            /* Adjust power off button size */
+            .power-off-btn {
+                width: 2rem;
+                height: 2rem;
+                font-size: 0.8rem;
+            }
+            
+            /* Adjust details image size */
+            .pokemon-detail-img {
+                width: 120px;
+                height: 120px;
             }
         }
     </style>
@@ -418,24 +465,24 @@
             { value: '9', label: 'GEN IX (PALDEA)', region: 'Paldea', startYear: 2022 },
         ];
 
-        const genRanges = {
-            'all': { offset: 0, limit: 1300 },
-            '1': { offset: 0, limit: 151 },
-            '2': { offset: 151, limit: 100 },
-            '3': { offset: 251, limit: 135 },
-            '4': { offset: 386, limit: 107 },
-            '5': { offset: 493, limit: 156 },
-            '6': { offset: 649, limit: 72 },
-            '7': { offset: 721, limit: 88 },
-            '8': { offset: 809, limit: 96 },
-            '9': { offset: 905, limit: 105 },
-        };
-
         const types = [
             'normal', 'fire', 'water', 'electric', 'grass', 'ice',
             'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug',
             'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
         ];
+
+        // Function to determine generation by ID
+        const getGenerationByPokemonId = (id) => {
+            if (id <= 151) return '1';
+            if (id <= 251) return '2';
+            if (id <= 386) return '3';
+            if (id <= 493) return '4';
+            if (id <= 649) return '5';
+            if (id <= 721) return '6';
+            if (id <= 809) return '7';
+            if (id <= 905) return '8';
+            return '9';
+        };
 
         const App = () => {
             const [pokemonList, setPokemonList] = useState([]);
@@ -445,14 +492,15 @@
             const [evolutionChain, setEvolutionChain] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedType, setSelectedType] = useState('');
-            const [selectedGeneration, setSelectedGeneration] = useState('1');
+            const [selectedGeneration, setSelectedGeneration] = useState('all');
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState('');
             const [showDetails, setShowDetails] = useState(false);
             const [progress, setProgress] = useState(1);
             const detailsRef = useRef(null);
-            const [cachedPokemon, setCachedPokemon] = useState({});
-            const [animationComplete, setAnimationComplete] = useState(false);
+            const [poweringOff, setPoweringOff] = useState(false);
+            const appRef = useRef(null);
+            const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
             useEffect(() => {
                 let animationFrame;
@@ -471,7 +519,7 @@
                         setProgress(Math.round(progress));
                     } else {
                         setProgress(100);
-                        setAnimationComplete(true);
+                        setInitialLoadComplete(true);
                         return;
                     }
 
@@ -484,74 +532,87 @@
             }, []);
 
             useEffect(() => {
-                const fetchPokemon = async (gen = '1') => {
+                const fetchAllPokemon = async () => {
                     try {
                         setError('');
                         setLoading(true);
-                        const { offset, limit } = genRanges[gen];
                         
-                        if (cachedPokemon[gen]) {
-                            setPokemonList(cachedPokemon[gen]);
-                            setFilteredPokemon(cachedPokemon[gen]);
-                            return;
-                        }
-
+                        // Fetch the list of all Pokémon
                         const response = await fetch(
-                            `https://pokeapi.co/api/v2/pokemon?offset=${offset}&limit=${limit}`
+                            `https://pokeapi.co/api/v2/pokemon?limit=1300`
                         );
                         if (!response.ok) throw new Error('Failed to fetch Pokémon list');
                         const data = await response.json();
-
-                        const pokemonPromises = data.results.map(async (pokemon) => {
-                            const pokemonResponse = await fetch(pokemon.url);
-                            if (!pokemonResponse.ok) throw new Error(`Failed to fetch ${pokemon.name}`);
-                            return pokemonResponse.json();
+                        
+                        // Create an array of promises for each Pokémon
+                        const pokemonPromises = data.results.map(async (pokemon, index) => {
+                            try {
+                                const pokemonResponse = await fetch(pokemon.url);
+                                if (!pokemonResponse.ok) throw new Error(`Failed to fetch ${pokemon.name}`);
+                                const pokemonData = await pokemonResponse.json();
+                                return pokemonData;
+                            } catch (err) {
+                                console.error('Error fetching Pokémon:', err);
+                                return null;
+                            }
                         });
 
+                        // Fetch all Pokémon in parallel
                         const pokemonData = await Promise.all(pokemonPromises);
-                        setPokemonList(pokemonData);
-                        setFilteredPokemon(pokemonData);
-                        setCachedPokemon(prev => ({ ...prev, [gen]: pokemonData }));
+                        const validPokemon = pokemonData.filter(p => p !== null);
+                        setPokemonList(validPokemon);
                     } catch (err) {
                         console.error('Error fetching Pokémon:', err);
                         setError('Failed to load Pokémon. Please try again later.');
                     }
                 };
 
-                fetchPokemon(selectedGeneration);
-            }, [selectedGeneration]);
+                if (initialLoadComplete) {
+                    fetchAllPokemon();
+                }
+            }, [initialLoadComplete]);
 
             useEffect(() => {
-                if (animationComplete && pokemonList.length > 0) {
+                if (pokemonList.length > 0) {
                     setLoading(false);
                 }
-            }, [animationComplete, pokemonList]);
+            }, [pokemonList]);
 
             useEffect(() => {
                 let filtered = pokemonList;
-
+                
+                // Apply search filter if search term exists
                 if (searchTerm) {
                     filtered = filtered.filter(pokemon =>
                         pokemon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         pokemon.id.toString().includes(searchTerm)
                     );
                 }
-
+                
+                // Apply type filter if selected
                 if (selectedType) {
                     filtered = filtered.filter(pokemon =>
                         pokemon.types.some(type => type.type.name === selectedType)
                     );
                 }
+                
+                // Apply generation filter if not "all"
+                if (selectedGeneration !== 'all') {
+                    filtered = filtered.filter(pokemon => 
+                        getGenerationByPokemonId(pokemon.id) === selectedGeneration
+                    );
+                }
 
                 setFilteredPokemon(filtered);
-            }, [pokemonList, searchTerm, selectedType]);
+            }, [pokemonList, searchTerm, selectedType, selectedGeneration]);
 
             const handlePokemonClick = async (pokemon) => {
                 setSelectedPokemon(pokemon);
                 setShowDetails(true);
+                setError('');
                 
                 try {
-                    setError('');
+                    // Fetch species data
                     const speciesResponse = await fetch(
                         `https://pokeapi.co/api/v2/pokemon-species/${pokemon.id}`
                     );
@@ -559,13 +620,18 @@
                     const speciesData = await speciesResponse.json();
                     setPokemonSpecies(speciesData);
 
-                    const evolutionResponse = await fetch(speciesData.evolution_chain.url);
-                    if (!evolutionResponse.ok) throw new Error('Failed to fetch evolution chain');
-                    const evolutionData = await evolutionResponse.json();
-                    setEvolutionChain(evolutionData.chain);
+                    // Fetch evolution chain if available
+                    if (speciesData.evolution_chain?.url) {
+                        const evolutionResponse = await fetch(speciesData.evolution_chain.url);
+                        if (!evolutionResponse.ok) throw new Error('Failed to fetch evolution chain');
+                        const evolutionData = await evolutionResponse.json();
+                        setEvolutionChain(evolutionData.chain);
+                    } else {
+                        setEvolutionChain(null);
+                    }
                 } catch (err) {
                     console.error('Error fetching Pokémon details:', err);
-                    setError('Failed to load Pokémon details.');
+                    setError('Failed to load some Pokémon details. Basic information is still available.');
                 }
 
                 setTimeout(() => {
@@ -651,7 +717,25 @@
                 );
             };
 
-            if (error) {
+            const handlePowerOff = () => {
+                setPoweringOff(true);
+                setTimeout(() => {
+                    document.getElementById('root').classList.add('hidden');
+                    document.getElementById('welcome').classList.remove('hidden');
+                    setPoweringOff(false);
+                    // Reset app state
+                    setShowDetails(false);
+                    setSelectedPokemon(null);
+                    setPokemonSpecies(null);
+                    setEvolutionChain(null);
+                    setError('');
+                    setSearchTerm('');
+                    setSelectedType('');
+                    setSelectedGeneration('all');
+                }, 800);
+            };
+
+            if (error && !selectedPokemon) {
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
                         <div className="bg-gradient-to-b from-gray-200 to-gray-300 rounded-xl p-8 shadow-2xl text-center border-4 border-red-800 max-w-md">
@@ -699,7 +783,10 @@
             }
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4">
+                <div 
+                    className={`min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 transition-opacity duration-800 ${poweringOff ? 'power-off-animation' : ''}`}
+                    ref={appRef}
+                >
                     <div className="max-w-7xl mx-auto">
                         <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-t-3xl p-6 shadow-2xl border-4 border-red-800 relative">
                             <div className="absolute top-4 left-6 w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-4 border-white shadow-inner"></div>
@@ -712,7 +799,16 @@
                                 <h1 className="text-4xl font-bold text-white pokemon-page-title" style={{ fontFamily: "'Press Start 2P', cursive" }}>
                                     POKEBOOK
                                 </h1>
-                                <p className="text-red-100 mt-2">DIGITAL POKÉMON ENCYCLOPEDIA</p>
+                                <p className="text-red-100 mt-2">UNIVERSAL POKÉMON ENCYCLOPEDIA</p>
+                            </div>
+                            <div className="header-buttons absolute top-4 right-4 flex gap-2">
+                                <button
+                                    onClick={handlePowerOff}
+                                    className="power-off-btn bg-gradient-to-b from-gray-600 to-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:from-gray-700 hover:to-gray-900 transition-all"
+                                    title="Power Off"
+                                >
+                                    <i className="fas fa-power-off"></i>
+                                </button>
                             </div>
                         </div>
                         <div className="bg-gradient-to-b from-gray-100 to-gray-200 border-4 border-red-800 border-t-0 rounded-b-3xl overflow-hidden">
@@ -724,7 +820,7 @@
                                                 <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"></i>
                                                 <input
                                                     type="text"
-                                                    placeholder="Search Pokémon..."
+                                                    placeholder="Search any Pokémon..."
                                                     className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-800 border-0 focus:ring-2 focus:ring-blue-400 outline-none text-white"
                                                     value={searchTerm}
                                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -816,6 +912,7 @@
                                                 onClick={() => {
                                                     setSearchTerm('');
                                                     setSelectedType('');
+                                                    setSelectedGeneration('all');
                                                 }}
                                                 className="mt-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-700 blue-button"
                                             >
@@ -829,18 +926,20 @@
                                     {selectedPokemon && (
                                         <div className="bg-gradient-to-b from-white to-gray-100 rounded-2xl shadow-2xl overflow-hidden">
                                             <div className="bg-gradient-to-r from-blue-600 to-blue-800 p-6 text-white relative">
-                                                <button
-                                                    onClick={closeDetails}
-                                                    className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors red-button"
-                                                >
-                                                    <i className="fas fa-times w-5 h-5"></i>
-                                                </button>
+                                                <div className="details-buttons absolute top-4 right-4 flex gap-2">
+                                                    <button
+                                                        onClick={closeDetails}
+                                                        className="bg-red-500 hover:bg-red-600 p-2 rounded-full transition-colors red-button"
+                                                    >
+                                                        <i className="fas fa-times w-5 h-5"></i>
+                                                    </button>
+                                                </div>
                                                 <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
                                                     <div className="flex-shrink-0">
                                                         <img
                                                             src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${selectedPokemon.id}.png`}
                                                             alt={selectedPokemon.name}
-                                                            className="w-40 h-40"
+                                                            className="w-40 h-40 pokemon-detail-img"
                                                         />
                                                     </div>
                                                     <div>
@@ -933,7 +1032,7 @@
                                                                 </p>
                                                                 <p className="text-gray-600 capitalize flex justify-between">
                                                                     <span>Generation:</span>
-                                                                    <span className="font-medium">{pokemonSpecies.generation?.name.replace('generation-', '').toUpperCase()}</span>
+                                                                    <span className="font-medium">{getGenerationByPokemonId(selectedPokemon.id)}</span>
                                                                 </p>
                                                                 <p className="text-gray-600 capitalize flex justify-between">
                                                                     <span>Capture Rate:</span>
