@@ -492,7 +492,7 @@
             const [evolutionChain, setEvolutionChain] = useState(null);
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedType, setSelectedType] = useState('');
-            const [selectedGeneration, setSelectedGeneration] = useState('all');
+            const [selectedGeneration, setSelectedGeneration] = useState('1');
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState('');
             const [showDetails, setShowDetails] = useState(false);
@@ -731,7 +731,7 @@
                     setError('');
                     setSearchTerm('');
                     setSelectedType('');
-                    setSelectedGeneration('all');
+                    setSelectedGeneration('1');
                 }, 800);
             };
 
